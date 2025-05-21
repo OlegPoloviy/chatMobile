@@ -1,32 +1,51 @@
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { chatRouter } from "./routes/ChatRouter.js";
 import "dotenv/config";
 
+// Створюємо Express додаток
 const app = express();
-const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
+
+// Створюємо HTTP сервер на основі Express додатку
+const httpServer = createServer(app);
+
+// Налаштовуємо Express middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Налаштовуємо Express маршрути
+app.use("/api/chat", chatRouter);
+
+// Додаємо базовий маршрут для перевірки роботи сервера
+app.get("/", (req, res) => {
+  res.send("Server is running correctly!");
+});
+
+// Створюємо Socket.IO сервер, що використовує той самий HTTP сервер
 const io = new Server(httpServer, {
   cors: {
-    origin: "*", // In production, replace with your frontend URL
+    origin: "*", // В production замініть на URL вашого фронтенду
     methods: ["GET", "POST"],
   },
 });
 
-// Store connected users
+// Зберігаємо підключених користувачів
 const users = new Map();
 
+// Обробляємо Socket.IO з'єднання
 io.on("connection", (socket) => {
   console.log("A user connected");
 
-  // Handle user joining
+  // Обробка приєднання користувача
   socket.on("user:join", (username) => {
     users.set(socket.id, username);
     socket.broadcast.emit("user:joined", username);
     io.emit("users:list", Array.from(users.values()));
   });
 
-  // Handle chat messages
+  // Обробка повідомлень чату
   socket.on("message:send", (message) => {
     const username = users.get(socket.id);
     if (username) {
@@ -38,7 +57,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle typing status
+  // Обробка статусу набору тексту
   socket.on("typing:start", () => {
     const username = users.get(socket.id);
     if (username) {
@@ -50,7 +69,7 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("typing:status", null);
   });
 
-  // Handle disconnection
+  // Обробка відключення
   socket.on("disconnect", () => {
     const username = users.get(socket.id);
     if (username) {
@@ -62,6 +81,9 @@ io.on("connection", (socket) => {
   });
 });
 
+// Запускаємо HTTP сервер, який обслуговує як REST API, так і Socket.IO з'єднання
 httpServer.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(
+    `Server is running on port ${PORT} (handling both HTTP and Socket.IO)`
+  );
 });
