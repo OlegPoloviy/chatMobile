@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "version": ">= 5.9.1"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease"
+      },
+      "node": "18.13.0",
+      "env": {
+        "EXPO_NO_BUNDLE_SPLITTING": "1"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
